@@ -30,6 +30,7 @@ class TetheredJ1a(swapforth.TetheredTarget):
         
         def waitcr():
             while ser.read(1) != chr(10):
+                print('.')
                 pass
 
         waitcr()
@@ -56,7 +57,7 @@ class TetheredJ1a(swapforth.TetheredTarget):
         print('established')
 
     def interrupt(self):
-        self.reset(False)
+        self.reset()
 
     def serialize(self):
         l = self.command_response('0 here dump')

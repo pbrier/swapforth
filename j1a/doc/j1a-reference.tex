@@ -391,7 +391,7 @@ blinks the on-board LEDs when a signal on IrDA is detected. \index{blink}
 : .bleds
 begin
   $2000 io@
-  3 rshift
+  2 rshift
   3 xor
   dup .x
   $0004 io!
@@ -399,6 +399,36 @@ again
 ;
 \end{Verbatim}
 \end{framed}
+
+
+\begin{framed}
+\begin{Verbatim}
+\ display button io state as hex 
+: .buttons
+begin
+  $2000 io@ .x
+again
+;
+\end{Verbatim}
+\end{framed}
+
+
+\begin{framed}
+\begin{Verbatim}
+\ test the digital outputs, generate square wave on each pin
+\ D0=max freq, D1=Fmax/2 .. D15=Fmax/2^15
+: testio
+$ffff 2 io!
+begin
+  65535 0 do
+    i 1 io!
+  loop
+again
+;
+\end{Verbatim}
+\end{framed}
+
+
 
 \newpage
 \section{Port Map}

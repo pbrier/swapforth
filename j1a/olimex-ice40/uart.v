@@ -8,7 +8,7 @@
 
 
 // Simple baud generator for transmitter
-// ser_clk pulses at 115200 Hz
+// ser_clk pulses at 'BAUD Hz
 
 module baudgen(
   input wire clk,
@@ -28,7 +28,7 @@ endmodule
 //
 // Need to restart the counter when the transmission starts
 // Generate 2X the baud rate to allow sampling on bit boundary
-// So ser_clk pulses at 2*115200 Hz
+// So ser_clk pulses at 2*'BAUD Hz
 
 module baudgen2(
   input wire clk,

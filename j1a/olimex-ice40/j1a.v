@@ -42,6 +42,10 @@ module top(
            output PIOS_03,    // flash CS
 
 	   inout DIO3_7, inout DIO3_6, inout DIO3_5, inout DIO3_4, inout DIO3_3, inout DIO3_2, inout DIO3_1, inout DIO3_0, // DIO3 port
+           inout DIO3_15, inout DIO3_14, inout DIO3_13, inout DIO3_12, inout DIO3_11, inout DIO3_10, inout DIO3_9, inout DIO3_8, // DIO3 port
+
+	   //output DIO3_16,  // debug IO
+           //output DIO2_0, output DIO2_1, output DIO2_3,
 
 	   output SRAM_nCS,  // SRAM CS
  	   output SRAM_nWE,  // SRAM WE
@@ -63,7 +67,12 @@ always @ (posedge pclk) begin				//on each positive edge of 100Mhz clock increme
 	clk_div <= ~clk_div;
 end
 assign clk = clk_div;
-wire resetq = uart_RTS;
+
+//wire uart_RTS;
+//inpin _rcrts(.clk(clk), .pin(RTS), .rd(uart_RTS));
+//inpin _rcrts(.pin(RTS), .rd(uart_RTS));
+wire resetq = RTS;
+
 
   
 /*  SB_PLL40_CORE #(.FEEDBACK_PATH("SIMPLE"),
@@ -164,9 +173,9 @@ wire resetq = uart_RTS;
   wire [7:0] uart0_data;
   wire uart0_wr = io_wr_ & io_addr_[12];
   wire uart0_rd = io_rd_ & io_addr_[12];
-  wire uart_RXD, uart_RTS;
+  wire uart_RXD;
   inpin _rcxd(.clk(clk), .pin(RXD), .rd(uart_RXD));
-  inpin _rcrts(.clk(clk), .pin(RTS), .rd(uart_RTS));
+
 
   buart _uart0 (
      .clk(clk),
@@ -179,6 +188,11 @@ wire resetq = uart_RTS;
      .busy(uart0_busy),
      .tx_data(dout_[7:0]),
      .rx_data(uart0_data));
+
+ // assign DIO3_16 = uart0_valid;
+ // assign DIO2_0 = uart0_valid;
+ // assign DIO2_1 = uart_RXD;
+ 
 
   // ######   LEDS   ###############################
 
@@ -226,16 +240,21 @@ wire resetq = uart_RTS;
 
   // ######  IO BANK 3   ##########################################
 
-  reg [7:0] dio3_dir;   // 1:output, 0:input
-  wire [7:0] dio3_in;
+  reg [15:0] dio3_dir;   // 1:output, 0:input
+  wire [15:0] dio3_in;
 
-  ioport _dio3 (.clk(clk),
+  ioport _dio3l (.clk(clk),
                .pins( { DIO3_7, DIO3_6, DIO3_5, DIO3_4, DIO3_3, DIO3_2, DIO3_1, DIO3_0 }),
                .we(io_wr_ & io_addr_[0]),
-               .wd(dout_),
-               .rd( dio3_in ),
-               .dir(dio3_dir));
-
+               .wd(dout_[7:0]),
+               .rd( dio3_in[7:0] ),
+               .dir(dio3_dir[7:0]));
+  ioport _dio3h (.clk(clk),
+               .pins( { DIO3_15, DIO3_14, DIO3_13, DIO3_12, DIO3_11, DIO3_10, DIO3_9, DIO3_8 }),
+               .we(io_wr_ & io_addr_[0]),
+               .wd(dout_[15:8]),
+               .rd( dio3_in[15:8] ),
+               .dir(dio3_dir[15:8]));
 
   // ######   IO PORTS   ######################################
   /*        bit   mode    device
@@ -253,8 +272,8 @@ wire resetq = uart_RTS;
   */
 
   assign io_din =
-    (io_addr_[ 0] ? {8'd0, dio3_in}                                       : 16'd0) |
-    (io_addr_[ 1] ? {8'd0, dio3_dir}                                      : 16'd0) |
+    (io_addr_[ 0] ? { dio3_in }                                       : 16'd0) |
+    (io_addr_[ 1] ? { dio3_dir }                                      : 16'd0) |
     (io_addr_[ 2] ? {11'd0, LEDS}                                         : 16'd0) |
     (io_addr_[ 3] ? {13'd0, PIOS}                                         : 16'd0) |
     (io_addr_[ 4] ? {8'd0, sram_d_in}                                     : 16'd0) |
@@ -262,7 +281,7 @@ wire resetq = uart_RTS;
     (io_addr_[ 6] ? {sram_address}                                        : 16'd0) |
     //(io_addr_[ 7] ? {8'd0, sram_d_dir}                                    : 16'd0) |
     (io_addr_[12] ? {8'd0, uart0_data}                                    : 16'd0) |
-    (io_addr_[13] ? {11'd0, but_2, but_1, uart_RTS, uart0_valid, !uart0_busy} : 16'd0);
+    (io_addr_[13] ? {12'd0, but_2, but_1, uart0_valid, !uart0_busy} : 16'd0);
 
   reg boot, s0, s1;
 
@@ -274,7 +293,7 @@ wire resetq = uart_RTS;
 
   always @(posedge clk) begin
     if (io_wr_ & io_addr_[1])
-      dio3_dir <= dout_[7:0];
+      dio3_dir <= dout_;
     if (io_wr_ & io_addr_[5])
       sram_d_dir <= dout_[7:0];
    // if (io_wr_ & io_addr_[7])
