@@ -1,8 +1,12 @@
+TARGET = olimex-ice40
+UART = /dev/ttyUSB0
+
 build/ram.v: build/nuc.hex mkrom.py
 	python mkrom.py
 
-build/nuc.hex: cross.fs basewords.fs nuc.fs
-	gforth cross.fs basewords.fs nuc.fs
+build/nuc.hex: cross.fs basewords.fs nuc.fs 
+	gforth cross.fs basewords.fs nuc.fs 
+	echo done.
 
 bootstrap: build/nuc.hex mkrom.py verilator/bootstrap
 	make -C verilator
@@ -17,17 +21,20 @@ clean:
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
 
-connect: /dev/ttyUSB1
-	sudo python shell.py -h /dev/ttyUSB1 -p ../common/
+connect: /dev/ttyUSB0
+	python shell.py -h $(UART) -p ../common/
+
+putty: $(UART)
+	putty -load j1
 
 j4a:
-	make -C icestorm j4a
+	make -C $(TARGET)  j4a
 
 j1a8k:
-	make -C icestorm j1a8k
+	make -C $(TARGET) j1a8k
 
 j1a:
-	make -C icestorm j1a
+	make -C $(TARGET) j1a
 
 endif
 
@@ -38,14 +45,16 @@ ifeq ($(UNAME_S),Darwin)
 connect: /dev/tty.usbserial-*B
 	sudo python shell.py -h /dev/tty.usbserial-*B -p ../common/
 
+
+
 j4a: mackextunload
-	make -C icestorm j4a
+	make -C $(TARGET) j4a
 
 j1a8k: mackextunload
-	make -C icestorm j1a8k
+	make -C $(TARGET) j1a8k
 
 j1a: mackextunload
-	make -C icestorm j1a
+	make -C $(TARGET) j1a
 
 mackextunload:
 	sudo kextunload -bundle-id com.apple.driver.AppleUSBFTDI
