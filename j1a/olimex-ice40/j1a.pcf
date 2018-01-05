@@ -38,7 +38,6 @@ set_io SA15 97
 set_io SA16 99
 set_io SA17 100
 
-
 set_io SD0 62
 set_io SD1 63
 set_io SD2 64
@@ -56,6 +55,13 @@ set_io SD13 54
 set_io SD14 53
 set_io SD15 52
 
+set_io DIO2_0 26
+set_io DIO2_1 27
+set_io DIO2_2 28
+set_io DIO2_3 29
+set_io DIO2_4 30
+set_io DIO2_5 33
+set_io DIO2_6 34
 
 set_io DIO3_0 1
 set_io DIO3_1 2
@@ -66,7 +72,15 @@ set_io DIO3_5 8
 set_io DIO3_6 9
 set_io DIO3_7 10
 
-
+set_io DIO3_8 12
+set_io DIO3_9 13
+set_io DIO3_10 16
+set_io DIO3_11 18
+set_io DIO3_12 19
+set_io DIO3_13 20
+set_io DIO3_14 21
+set_io DIO3_15 24
+set_io DIO3_16 25
 
 set_io vga_r[0] 24
 set_io vga_r[1] 19

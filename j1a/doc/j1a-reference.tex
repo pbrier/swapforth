@@ -20,8 +20,8 @@ Reference
 \parindent 0pt
 \parskip \baselineskip
 \textcopyright{} 2015, James Bowman \\
-All rights reserved
-
+All rights reserved \\
+Adapted to Olimex ICE40 board by pbrier (pbrier@pbrier.nl)
 \begin{framed}
 
 \underline{ANS Forth Compliance Label}
@@ -58,7 +58,7 @@ Providing names from the \wl{Programming-Tools Extensions} word set
 \chapter{Getting started}
 
 \begin{center}
-\includegraphics[width=0.8\textwidth]{icestick-reva-front-2400.png}
+\includegraphics[width=0.6\textwidth]{iCE40HX1K-EVB-1.jpg}
 \end{center}
 
 J1a SwapForth is a 16-bit version of SwapForth,
@@ -71,20 +71,20 @@ leaving about 3.3 Kbytes for the application. \index{RAM}
 After installing the \index{icestorm} \index{icestorm} \index{git} \index{iceprog}
 \href{http://www.clifford.at/icestorm/}{icestorm}
 tools, you can run on a
-\href{http://www.latticesemi.com/icestick}{Lattice iCEstick}
+\href{https://www.olimex.com/Products/FPGA/iCE40/iCE40HX1K-EVB/open-source-hardware}{Olimex ICE40 board}
 like this
 
 \begin{framed}
 \begin{Verbatim}
-  git clone git@github.com:jamesbowman/swapforth.git
+  git clone https://github.com/pbrier/swapforth.git
   cd swapforth/j1a
-  iceprog icestorm/j1a.bin
-  python shell.py -h /dev/ttyUSB1
+  iceprogduino icestorm/j1a.bin
+  python shell.py -h /dev/ttyUSB0
 \end{Verbatim}
 \end{framed}
 
 \noindent
-(where \mach{/dev/ttyUSB1} is the appropriate port your iCEstick was assigned).
+(where \mach{/dev/ttyUSB0} is the appropriate port your serial adaptor was assigned).
 You should see something like
 
 \begin{framed}
@@ -144,8 +144,8 @@ blink
 After installing the icestorm tools, run
 
 \begin{Verbatim}
-rm build/*
-make -C icestorm
+~/Documents/ice/swapforth/j1a $ make clean
+~/Documents/ice/swapforth/j1a $ make j1a
 \end{Verbatim}
 
 \noindent
@@ -290,12 +290,12 @@ Some are traditional Forth words, others are specific to the J1a SwapForth imple
 \section{Raw UART access}
 
 At boot, SwapForth listens for a command on the UART. \index{UART}
-Connection parameters are 460800 8N1, and any terminal program should be able to connect.
+Connection parameters are 230400 8N1, and any terminal program should be able to connect.
 \index{DTR} \index{reset}
 Note that the hardware board uses DTR as a reset signal, so you should make sure that it is set OFF by the terminal program:
 
 \begin{verbatim}
-$ miniterm.py --dtr=0 /dev/ttyUSB5 460800
+$ miniterm.py --dtr=0 /dev/ttyUSB5 230400
 --- Miniterm on /dev/ttyUSB5: 460800,8,N,1 ---
 --- Quit: Ctrl+]  |  Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H ---
 --- forcing DTR inactive
@@ -358,20 +358,21 @@ Each dictionary entry has the following fields:
 \item \textbf{name$_1$ - name$_n$} - characters in name. If the length of the name is even, then a padding byte is appended
 \end{itemize}
 
-\chapter{iCEstick Hardware interface}
+\chapter{Olimex ICE40 Hardware interface}
 
 \begin{center}
-\includegraphics[width=0.8\textwidth]{icestick-reva-front-2400.png}
+\includegraphics[width=0.6\textwidth]{olimex_io.png}
 \end{center}
 
-The J1a for iCEstick includes connections to the iCEstick peripherals:
+The J1a for Olimex includes connections to the Olimex ICE40 peripherals:
 \begin{itemize}
 \item SPI flash \index{SPI flash}
-\item LEDs \index{LEDs}
-\item IrDA tranceiver \index{IrDA}
-\item \digilentpmod{} connector \index{Pmod}
+\item 2x LEDs \index{LEDs}
+\item 2x Button \index{IrDA}
+\item \GPIO{} GPIO connector \index{GPIO1}
 % \item prototyping connectors
 \item UART \index{UART}
+\item SRAM (64k x 16bit accessable)\index{SRAM}
 \end{itemize}
 
 Access to peripherals is via the
@@ -381,26 +382,29 @@ Most ports are either read-only or write-only.
 For read-only ports, writing to the port has no effect.
 For write-only ports, reading from the port gives zero.
 
-As an example of direct port access, this word
+As an example of direct port access, this reads the buttons and sets the LEDS while also reporting the value to the serial console
 blinks the on-board LEDs when a signal on IrDA is detected. \index{blink}
 
 \begin{framed}
 \begin{Verbatim}
-: x
-  begin
-    $2000 io@     \ read from input port
-    8 and 0=      \ true if bit 3 (IrDA RXD) is 0
-    $0004 io!     \ write to LEDS
-  again
+\ output buttons to leds and terminal
+: .bleds
+begin
+  $2000 io@
+  3 rshift
+  3 xor
+  dup .x
+  $0004 io!
+again
 ;
 \end{Verbatim}
 \end{framed}
 
 \newpage
 \section{Port Map}
-\subsection{\$0001: \digilentpmod{} data}
+\subsection{\$0001: \GPIO{} data}
 
-The read-write port at address \$0001 is for direct access to the \digilentpmod{}
+The read-write port at address \$0001 is for direct access to the \GPIO{}
 connector. The port pins are assigned:
 
 \vspace{10pt}
@@ -436,9 +440,9 @@ Correspondingly the port bits are assigned to pins as follows:
 
 Note that pin direction is controlled by the corresponding bit the port at address \$0002.
 
-\subsection{\$0002: \digilentpmod{} direction}
+\subsection{\$0002: \GPIO{} direction}
 
-Each of the 8 bits controls the direction of the corresponding pin of the \digilentpmod{} connector.
+Each of the 8 bits controls the direction of the corresponding pin of the \GPIO{} connector.
 0 sets the pin to input, 1 means sets the pin to output.
 The bit-to-pin mapping is the same as for port \$0001.
 
