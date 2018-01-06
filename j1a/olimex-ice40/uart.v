@@ -1,10 +1,8 @@
 `default_nettype none
 
-`define CLKFREQ   25000000    // frequency of incoming signal 'clk'
-`define BAUD     115200
+`define CLKFREQ  (50000000)    // frequency of incoming signal 'clk'
+`define BAUD     (115200)
 
-//`define CLKFREQ   50000000    // frequency of incoming signal 'clk'
-//`define BAUD      4*115200
 
 
 // Simple baud generator for transmitter
@@ -16,6 +14,12 @@ module baudgen(
 
   localparam lim = (`CLKFREQ / `BAUD) - 1; 
   localparam w = $clog2(lim);
+  initial begin
+    $display("UART TX baudgen");
+    $display("clock=%d, baudrate=%d", $rtoi(`CLKFREQ), $rtoi(`BAUD));
+    $display("lim=%d, w=%d", lim, w);
+  end
+
   wire [w-1:0] limit = lim;
   reg [w-1:0] counter;
   assign ser_clk = (counter == limit);
@@ -33,11 +37,17 @@ endmodule
 module baudgen2(
   input wire clk,
   input wire restart,
-  output wire ser_clk);
+  output wire ser_clk
+);
 
   localparam lim = (`CLKFREQ / (2 * `BAUD)) - 1; 
   localparam w = $clog2(lim);
 
+  initial begin
+    $display("UART RX baudgen");
+    $display("clock=%d, baudrate=%d", $rtoi(`CLKFREQ), $rtoi(`BAUD));
+    $display("lim=%d, w=%d", lim, w);
+  end
 
   wire [w-1:0] limit = lim;
   reg [w-1:0] counter;
@@ -146,7 +156,7 @@ module rxuart(
       bitcountN = bitcount;
 
   // 3,5,7,9,11,13,15,17
-  assign sample = (|bitcount[4:1]) & bitcount[0] & ser_clk;
+  assign sample = (|bitcount[4:1]) & (!bitcount[0]) & ser_clk;
   assign data = shifter;
 
   always @(negedge resetq or posedge clk)

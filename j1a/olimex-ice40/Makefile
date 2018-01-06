@@ -13,7 +13,7 @@ SUBDIRS = ..
 all: $(SUBDIRS) j1a.bin
 
 j1a.bin: $(VERILOGS) j1a.pcf Makefile ../build/ram.v
-	yosys  -q -p "synth_ice40 -top top -abc2 -blif j1a.blif" $(VERILOGS)
+	yosys  -p "synth_ice40 -top top -abc2 -blif j1a.blif" $(VERILOGS) > j1a.log
 	arachne-pnr -p j1a.pcf j1a.blif -o j1a.txt -P vq100
 	icebox_explain j1a.txt > j1a.ex
 	icetime -t j1a.txt -p j1a.pcf -P vq100 -d hx1k -c 50 -o j1a.time
@@ -48,7 +48,7 @@ $(SUBDIRS):
 	$(MAKE) -C $@
 
 clean:
-	rm -f j1a.blif j1a.txt j1a.bin j1a.ex j1a.time
+	rm -f j1a.blif j1a.txt j1a.bin j1a.ex j1a.time ja.log
 	rm -f j1a8k.blif j1a8k.txt j1a8k.bin
 	rm -f j1a.blif j4a.txt j4a.bin
 

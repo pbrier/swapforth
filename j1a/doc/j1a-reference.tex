@@ -78,7 +78,7 @@ like this
 \begin{Verbatim}
   git clone https://github.com/pbrier/swapforth.git
   cd swapforth/j1a
-  iceprogduino icestorm/j1a.bin
+  iceprogduino olimex-ice40/j1a.bin
   python shell.py -h /dev/ttyUSB0
 \end{Verbatim}
 \end{framed}
@@ -152,12 +152,12 @@ After installing the icestorm tools, run
 This will produce \mach{j1a.bin} - but it only contains the very bare-bones system;
 the rest of SwapForth still needs to be compiled.
 To do this, load \mach{j1a.bin} and start the shell
-(assuming your icestorm board's serial appears at \mach{ttyUSB1}):
+(assuming your board's serial appears at \mach{ttyUSB0}):
 
 \begin{framed}
 \begin{Verbatim}
-  $ iceprog icestorm/j1a.bin
-  $ python shell.py -h /dev/ttyUSB1 -p ../common/
+  $ iceprogduino olimex-ice40/j1a.bin
+  $ python shell.py -h /dev/ttyUSB0 -p ../common/
   Contacting... established
   Loaded 143 words
   _
@@ -174,13 +174,13 @@ Then compile the rest of SwapForth and write the finished executable with these 
 \end{Verbatim}
 \end{framed}
 
-Now run \mach{make -C icestorm} again - this compiles an FPGA image with the complete code base built-in,
+Now run \mach{make -C olimex-ice40} again - this compiles an FPGA image with the complete code base built-in,
 which has the full set of words defined:
 
 \begin{framed}
 \begin{Verbatim}
-  $ iceprog icestorm/j1a.bin
-  $ python shell.py -h /dev/ttyUSB1 -p ../common/
+  $ iceprogduino olimex-ice40/j1a.bin
+  $ python shell.py -h /dev/ttyUSB0 -p ../common/
   Contacting... established
   Loaded 207 words
   _
@@ -290,15 +290,15 @@ Some are traditional Forth words, others are specific to the J1a SwapForth imple
 \section{Raw UART access}
 
 At boot, SwapForth listens for a command on the UART. \index{UART}
-Connection parameters are 230400 8N1, and any terminal program should be able to connect.
-\index{DTR} \index{reset}
-Note that the hardware board uses DTR as a reset signal, so you should make sure that it is set OFF by the terminal program:
+Connection parameters are 115200 8N1, and any terminal program should be able to connect.
+\index{RTS} \index{reset}
+Note that the hardware board uses RTS as a reset signal, so you should make sure that it is set OFF by the terminal program:
 
 \begin{verbatim}
-$ miniterm.py --dtr=0 /dev/ttyUSB5 230400
---- Miniterm on /dev/ttyUSB5: 460800,8,N,1 ---
+$ miniterm.py --rts=0 --eol LF /dev/ttyUSB0 115200
+--- Miniterm on /dev/ttyUSB5: 115200,8,N,1 ---
 --- Quit: Ctrl+]  |  Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H ---
---- forcing DTR inactive
+--- forcing RTS inactive
 
   ok
   ok
@@ -361,16 +361,14 @@ Each dictionary entry has the following fields:
 \chapter{Olimex ICE40 Hardware interface}
 
 \begin{center}
-\includegraphics[width=0.6\textwidth]{olimex_io.png}
+\includegraphics[width=1.0\textwidth]{olimex_io.png}
 \end{center}
 
 The J1a for Olimex includes connections to the Olimex ICE40 peripherals:
 \begin{itemize}
 \item SPI flash \index{SPI flash}
-\item 2x LEDs \index{LEDs}
-\item 2x Button \index{IrDA}
+\item 2x LEDs &2x Button \index{Buttons}
 \item \GPIO{} GPIO connector \index{GPIO1}
-% \item prototyping connectors
 \item UART \index{UART}
 \item SRAM (64k x 16bit accessable)\index{SRAM}
 \end{itemize}
@@ -383,7 +381,7 @@ For read-only ports, writing to the port has no effect.
 For write-only ports, reading from the port gives zero.
 
 As an example of direct port access, this reads the buttons and sets the LEDS while also reporting the value to the serial console
-blinks the on-board LEDs when a signal on IrDA is detected. \index{blink}
+\index{blink}
 
 \begin{framed}
 \begin{Verbatim}
