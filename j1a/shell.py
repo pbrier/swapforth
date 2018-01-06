@@ -18,7 +18,7 @@ class TetheredJ1a(swapforth.TetheredTarget):
         except:
             print("This tool needs PySerial, but it was not found")
             sys.exit(1)
-        self.ser = serial.Serial(port, 2 * 115200, timeout=None, rtscts=0)
+        self.ser = serial.Serial(port, 1 * 115200, timeout=None, rtscts=0)
 
     def reset(self, fullreset = True):
         ser = self.ser
@@ -33,21 +33,22 @@ class TetheredJ1a(swapforth.TetheredTarget):
                 print('.')
                 pass
 
-        waitcr()
+        #waitcr()
         ser.write(b'\r')
-        waitcr()
-
-        for c in ' 1 tth !':
+        #waitcr()
+	ser.flushInput()
+        time.sleep(0.1)
+        for c in '1 tth !':
             ser.write(c.encode('utf-8'))
             ser.flush()
-            time.sleep(0.001)
+            time.sleep(0.01)
             ser.flushInput()
-            # print(repr(ser.read(ser.inWaiting())))
+            print(repr(ser.read(ser.inWaiting())))
         ser.write(b'\r')
-
+	#c = ser.read(1)
         while 1:
             c = ser.read(1)
-            # print(repr(c))
+            print(repr(c))
             if c == b'\x1e':
                 break
 

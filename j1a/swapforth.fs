@@ -94,6 +94,28 @@ include core-ext.fs
 
 : ms 0 do 5986 0 do loop loop ;
 : leds  4 io! ;
+: buttons $2000 io@ 2 rshift 3 xor ;
+: gpio! $0001 io! ;
+: gpio@ $0001 io@ ;
+: gpio_dir $0002 io! ;
+
+\  SRAM write: data adress --
+: sramw
+swap
+$FFFF $0020 io! 
+$0006 $0040 io!
+$0010 io!
+dup
+3 lshift $0004 or $0040 io! 
+3 lshift $0006 or $0040 io! 
+;
+
+\ SRAM read: address -- data
+: sramr
+$0000 $0020 io! 
+3 lshift 2 or $0040 io!
+$0010 io@
+;
 
 : new
     s" | marker |" evaluate

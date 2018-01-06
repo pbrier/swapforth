@@ -103,10 +103,10 @@ class TetheredTarget:
         r = []
         while True:
             c = ser.read(max(1, ser.inWaiting())).decode('utf-8')
-            # print 'got', repr(c)
+            # print('got', repr(c))
             r.append(c.replace(chr(30), ''))
             if chr(30) in c:
-                # print 'full reponse', repr("".join(r))
+                # print( 'full reponse', repr("".join(r)) )
                 return "".join(r)
 
     def interactive_command(self, cmd = None):

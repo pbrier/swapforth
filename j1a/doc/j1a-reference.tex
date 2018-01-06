@@ -265,6 +265,7 @@ The Forth 200x number prefixes are supported: \index{Forth 200x}
 is also implemented.
 
 \newpage
+
 \section{Additional Words}
 
 The following words are not standard.
@@ -278,12 +279,24 @@ Some are traditional Forth words, others are specific to the J1a SwapForth imple
 \longworddef{forth}{( -- a )}{variable: most recent dictionary entry}
 \longworddef{io!}{( x a -- )}{store \mach{x} to IO port \mach{a}}
 \longworddef{io@}{( a -- x )}{fetch from IO port \mach{a}}
-\longworddef{leds}{( x -- )}{write \mach{x} to the onboard LEDs}
+\longworddef{leds}{( x -- )}{write \mach{x} to the onboard LEDs (bit0=D1, bit1=D2}
 \longworddef{new}{( -- )}{restore code and data pointers to the power-up state}
 \longworddef{s,}{( a u -- )}{add the \mach{u}-character string \mach{a} to the data space}
+\longworddef{tth}{( -- a )}{variable: tethered mode}
+
+\newpage
+\longworddef{buttons}{( -- a )}{Read current button state (bit0=BUTTON1, bit1=BUTTON2)}
+\longworddef{gpio!}{( a -- )}{Write GPIO value D0..D15 (set gpio\_dir bits first if you want signal output) }
+\longworddef{gpio@}{( -- a )}{Read GPIO value D0..D15}
+\longworddef{gpio\_dir}{( a -- )} {Set GPIO direction. 16bit direction (1=OUTPUT, 0=INPUT) }
+
+\longworddef{sramw}{( d a -- )}{Write data 'd' to SRAM address 'a'}
+\longworddef{sramr}{( a -- d )}{Read data from SRAM address 'a' }
+
+
 % \longworddef{serialize}{( -- )}{display all of current memory in base 36}
 % \worddef{sfind}{( dir pin -- )}{Like standard word \mach{find}, but uses a
-\longworddef{tth}{( -- a )}{variable: tethered mode}
+
 
 \chapter{Using SwapForth}
 
@@ -297,13 +310,14 @@ Note that the hardware board uses RTS as a reset signal, so you should make sure
 \begin{verbatim}
 $ miniterm.py --rts=0 --eol LF /dev/ttyUSB0 115200
 --- Miniterm on /dev/ttyUSB5: 115200,8,N,1 ---
---- Quit: Ctrl+]  |  Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H ---
+--- Quit: Ctrl+] | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H ---
 --- forcing RTS inactive
 
   ok
   ok
   ok
 \end{verbatim}
+
 
 % Raw UART access does not provide the conveniences of the SwapForth shell.
 
@@ -483,10 +497,7 @@ Setting a bit to 1 lights the corresponding LED.
 \noindent
 \begin{bytefield}[endianness=big, bitwidth=2.0em]{16}
   \bitheader{0-15} \\
-    \bitbox{11}{} &
-    \bitbox{1}{\tiny{LED5}} &
-    \bitbox{1}{\tiny{LED4}} &
-    \bitbox{1}{\tiny{LED3}} &
+    \bitbox{14}{} &
     \bitbox{1}{\tiny{LED2}} &
     \bitbox{1}{\tiny{LED1}}
 \end{bytefield}
@@ -557,14 +568,15 @@ can be used to access this port.
 \subsection{\$2000: IrDA, flash and UART inputs}
 
 Read-only port \$2000 contains the input signals from the
-IrDA receiver, SPI flash, and UART.
+Buttons, SPI flash, and UART.
 
 \vspace{10pt}
 \noindent
 \begin{bytefield}[endianness=big, bitwidth=2.0em]{16}
   \bitheader{0-15} \\
-    \bitbox{12}{} &
-    \bitbox{1}{\tiny{IrDA\\RXD}} &
+    \bitbox{11}{} &
+    \bitbox{1}{\tiny{Button\\BUT2}} &
+    \bitbox{1}{\tiny{Button\\BUT1}} &
     \bitbox{1}{\tiny{flash\\MISO}} &
     \bitbox{1}{\tiny{UART\\key?}} &
     \bitbox{1}{\tiny{UART\\busy}}
