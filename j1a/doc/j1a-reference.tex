@@ -66,12 +66,11 @@ intended as an interactive Forth system using very little logic and RAM.
 The system currently fits on a Lattice iCE40HX-1k FPGA. \index{FPGA}
 The J1a and peripherals use 1200 logic elements.
 SwapForth uses 4.7 Kbytes of RAM,
-leaving about 3.3 Kbytes for the application. \index{RAM}
+leaving about 3.3 Kbytes for the application. \index{RAM}. This version is adapted to run on an \href{https://www.olimex.com/Products/FPGA/iCE40/iCE40HX1K-EVB/open-source-hardware}{Olimex ICE40 board} and is compiled using the all open source \href{http://www.clifford.at/icestorm/}{icestorm} toolchain. Access to the on-board LEDs (2x), BUTTONs (2x), SRAM (512kbyte), SPI FLASH (2MByte) and GPIO (16-bit) is implemented.    
 
-After installing the \index{icestorm} \index{icestorm} \index{git} \index{iceprog}
-\href{http://www.clifford.at/icestorm/}{icestorm}
-tools, you can run on a
-\href{https://www.olimex.com/Products/FPGA/iCE40/iCE40HX1K-EVB/open-source-hardware}{Olimex ICE40 board}
+\newpage
+After installing the \href{http://www.clifford.at/icestorm/}{icestorm}, \href{https://gist.github.com/derhuerst/1b15ff4652a867391f03}{git}, and the \href{https://www.olimex.com/wiki/ICE40HX1K-EVB#Get_started_under_Linux}{Olimex Arduino or RPi programmer tools} you can install and run it on an
+\href{https://www.olimex.com/Products/FPGA/iCE40/iCE40HX1K-EVB/open-source-hardware}{Olimex ICE40 board} 
 like this
 
 \begin{framed}
@@ -108,6 +107,7 @@ There is a fairly complete
 \href{http://forth.sourceforge.net/std/dpans/dpans6.htm}{core ANS-compatible Forth system}
 running on the board, including a compiler.
 
+\newpage
 \section{Some demos} \index{demos}
 
 You can control the two on-board LEDs \index{LEDs}
@@ -139,6 +139,7 @@ blink
 
 \input{../../doc/easter.tex}
 
+\newpage
 \section{Building from scratch}
 
 After installing the icestorm tools, run
@@ -183,7 +184,6 @@ which has the full set of words defined:
   $ python shell.py -h /dev/ttyUSB0 -p ../common/
   Contacting... established
   Loaded 207 words
-  _
 \end{Verbatim}
 \end{framed}
 
@@ -304,7 +304,7 @@ Some are traditional Forth words, others are specific to the J1a SwapForth imple
 At boot, SwapForth listens for a command on the UART. \index{UART}
 Connection parameters are 115200 8N1, and any terminal program should be able to connect.
 \index{RTS} \index{reset}
-Note that the hardware board uses RTS as a reset signal, so you should make sure that it is set OFF by the terminal program:
+Note that RTS can be used as a reset signal (if connected), so you should make sure that it is set OFF by the terminal program. You can switch it during your session using \mach{CTRL-T CTRL-R}:
 
 \begin{verbatim}
 $ miniterm.py --rts=0 --eol LF /dev/ttyUSB0 115200
@@ -313,6 +313,8 @@ $ miniterm.py --rts=0 --eol LF /dev/ttyUSB0 115200
 --- forcing RTS inactive
   ok
   ok
+  ok
+
 \end{verbatim}
 
 
@@ -331,6 +333,7 @@ $ miniterm.py --rts=0 --eol LF /dev/ttyUSB0 115200
 % \mach{ffff} & -1 & \mach{ABORT} \\    \index{ffff@\mach{ffff}, throw code}
 % \mach{fff3} & -13 & undefined word \\ \index{fff3@\mach{fff3}, throw code}
 % \end{tabular}
+
 
 \input{../../doc/shell.tex}
 
@@ -370,18 +373,22 @@ Each dictionary entry has the following fields:
 \end{itemize}
 
 \chapter{Olimex ICE40 Hardware interface}
-
+This shows the connections to the serials interface via the GPIO1 connector and the mapping of the GPIO pins. Note: all signals are 3V3!
 \begin{center}
-\includegraphics[width=1.0\textwidth]{olimex_io.png}
+\includegraphics[width=1.4\textwidth]{olimex_io.png}
 \end{center}
 
-The J1a for Olimex includes connections to the Olimex ICE40 peripherals:
+\newpage 
+
+This J1a implementation for The Olimex ICE40 boards includes support for the following peripherals:
 \begin{itemize}
-\item SPI flash \index{SPI flash}
-\item 2x LEDs &2x Button \index{Buttons}
+
+\item 2x LEDs & 2x Button \index{Buttons}
 \item GPIO connector \index{GPIO}
 \item UART \index{UART}
-\item SRAM (64k x 16bit accessable)\index{SRAM}
+\item SRAM (4 x 64k x 16bit accessable, 512kbyte total)\index{SRAM}
+\item SPI flash (2 MByte) \index{SPI flash}
+
 \end{itemize}
 
 Access to peripherals is via the
@@ -441,7 +448,7 @@ again
 \section{Port Map}
 \subsection{\$0001: GPIO data}
 
-The read-write port at address \$0001 is for direct access to the GPIO
+The read-write port at address \$0001 is for direct access to the GPIO1
 connector. The port pins are assigned as follows (bottom row is closest to PCB):
 
 \vspace{10pt}
@@ -465,8 +472,6 @@ bit 11 & 27 & 28 & x \\
 bit 12 & 29 & 30 & x \\
 bit 13 & 31 & 32 & x \\
 bit 14 & 33 & 34 & bit 15 \\
-
-
 
 \end{tabular}
 \vspace{10pt}
@@ -504,6 +509,7 @@ Each of the 16 bits controls the direction of the corresponding pin of the GPIO 
 0 sets the pin to input, 1 means sets the pin to output.
 The bit-to-pin mapping is the same as for port \$0001.
 
+\vspace{10pt}
 \subsection{\$0004: LEDs}
 
 The five on-board LEDS are controlled by write-only port at address \$0004.
@@ -537,6 +543,53 @@ Write-only port \$0008 controls the flash (SPI) outputs.
     \bitbox{1}{\tiny{flash\\MOSI}} &
     \bitbox{1}{\tiny{flash\\CS}}
 \end{bytefield}
+
+
+\subsection{\$0010, \$0020, \$0040: SRAM}
+
+The 16bit x 256k SRAM chip is connected to IO ports. These ports can be used to Read and Write up to 512kByte of data (in 4 banks of 128 kbyte)
+The write port at address \$0010 is setting the 16 bit SRAM R/W address
+The read-write port at address \$0020 is for writing and reading the 16 bit SRAM data
+The write port at address \$0040 is controlling the SRAM data direction and R/W bits, and to set the upper 2 address bits. The words
+\wordidx{sramw}, \wordidx{sramr} can be used to access these ports.
+
+\vspace{10pt}
+\$0010 SRAM Address register:
+
+\vspace{10pt}
+\noindent
+\begin{bytefield}[endianness=big, bitwidth=2.0em]{16}
+  \bitheader{0-15} \\
+    \bitbox{16}{Address A15:A0}
+\end{bytefield}
+
+\vspace{10pt}
+\$0020 SRAM Data register:
+
+\vspace{10pt}
+\noindent
+\begin{bytefield}[endianness=big, bitwidth=2.0em]{16}
+  \bitheader{0-15} \\
+    \bitbox{16}{Data D15:D0}
+\end{bytefield}
+
+% { 11'b0, A17, A16, SRAM_nOE, SRAM_nWE, IO_DIR }
+\vspace{10pt}
+\$0020 SRAM Control register:
+
+\vspace{10pt}
+\noindent
+\begin{bytefield}[endianness=big, bitwidth=2.0em]{16}
+  \bitheader{0-15} \\
+    \bitbox{11}{}
+    \bitbox{1}{\tiny{A17}}
+    \bitbox{1}{\tiny{A16}}
+    \bitbox{1}{\tiny{nOE}}
+    \bitbox{1}{\tiny{nWE}}
+    \bitbox{1}{\tiny{DIR}}
+\end{bytefield}
+
+
 
 
 \subsection{\$0800: SB\_WARMBOOT control} \index{SB\_WARMBOOT} \index{reconfigure}
