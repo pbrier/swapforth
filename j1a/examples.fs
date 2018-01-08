@@ -39,28 +39,28 @@ again
 ;
 
 \ write data to external SRAM
-\ ADRESS  0010: data (i/o)
-\ ADDRESS 0020: data (dir)
-\ ADDRESS 0040: address & CS/R/W {SA12, SA11, SA10, SA9, SA8, SA7, SA6, SA5, SA4, SA3, SA2, SA1, SA0, SRAM_nOE, SRAM_nWE, SRAM_nCS}
-\ WRITE: Set data dir to output, keep CS LOW, set data, set address, on (/WE low --> /WE high), data is clocked in
+\ ADRESS  0010: address 
+\ ADDRESS 0020: data
+\ ADDRESS 0040: control {A17, A16, SRAM_nOE, SRAM_nWE, SRAM_DIR}, DIR=1 ==> OUTPUT
+\ WRITE: Set nWE LOW, data dir to output, set data, set address, set nWE HIGH (on /WE low --> /WE high), data is clocked in
 \ READ: Set data dir to input, set address, CS=LOW, read data 
 
 \  write: data adress --
 : sramw
-swap
-$FFFF $0020 io! 
-$0006 $0040 io!
-$0010 io!
-dup
-3 lshift $0004 or $0040 io! 
-3 lshift $0006 or $0040 io! 
+$10 io!
+$20 io!
+$4 $0040 io!
+$5 $0040 io!
+$6 $0040 io!
+$4 $0040 io!
 ;
 
 \ read: address -- data
 : sramr
-$0000 $0020 io! 
-3 lshift 2 or $0040 io!
-$0010 io@
+$0010 io!
+$6 $0040 io!
+$0020 io@
+$4 $0040 io!
 ;
 
 

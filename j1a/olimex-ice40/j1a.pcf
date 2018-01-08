@@ -1,4 +1,4 @@
-set_io pclk 15
+set_io CLK100MHZ 15
 
 set_io TXD 37
 set_io RXD 36

@@ -93,7 +93,7 @@ class TetheredTarget:
         print('listen')
         while 1:
             c = self.ser.read(1)
-            print(repr(c))
+            #print(repr(c))
 
     def command_response(self, cmd):
         ser = self.ser

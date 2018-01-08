@@ -27,7 +27,7 @@
 // TOP MODULE
 module top(
 
-	   input pclk, 
+	   input CLK100MHZ, 
         
 	   input BUT1, input BUT2,
            output LED1, output LED2,
@@ -54,35 +54,31 @@ module top(
 	   output SA8, output SA9, output SA10, output SA11, output SA12, output SA13, output SA14, output SA15,
 	   output SA16, output SA17,
 	   inout SD0, inout SD1, inout SD2, inout SD3, inout SD4, inout SD5, inout SD6, inout SD7,  // SRAM DATA
-	   /* inout SD8, inout SD9, inout SD10, inout SD11, inout SD12, inout SD13, inout SD14, inout SD15,*/
+	   inout SD8, inout SD9, inout SD10, inout SD11, inout SD12, inout SD13, inout SD14, inout SD15,
 
 );
 
 
+// reset line, reset the core but keep memory alive
+  wire resetq = RTS;
 
 // clock diviver, divide 100Mhz pclk by 2 to get internal 50Mhz clock
-wire clk; // internal clock
-reg	clk_div;
-always @ (posedge pclk) begin				//on each positive edge of 100Mhz clock increment clk_div
-	clk_div <= ~clk_div;
-end
-assign clk = clk_div;
+  reg clk; // internal clock
+  always @ (posedge CLK100MHZ) 
+  begin
+    clk <= ~clk;
+  end
 
-//wire uart_RTS;
-//inpin _rcrts(.clk(clk), .pin(RTS), .rd(uart_RTS));
-//inpin _rcrts(.pin(RTS), .rd(uart_RTS));
-wire resetq = RTS;
-
-
-  
-/*  SB_PLL40_CORE #(.FEEDBACK_PATH("SIMPLE"),
+// cannot get PLL to work somehow
+/*  wire clk;
+  SB_PLL40_CORE #(.FEEDBACK_PATH("SIMPLE"),
                   .PLLOUT_SELECT("GENCLK"),
-                  .DIVR(4'b0000),
-                  .DIVF(7'd3),
-                  .DIVQ(3'b000),
-                  .FILTER_RANGE(3'b001),
+                  .DIVR(4'd5),
+                  .DIVF(7'd2),
+                  .DIVQ(3'd0),
+                  .FILTER_RANGE(3'b100),
                  ) uut (
-                         .REFERENCECLK(pclk),
+                         .REFERENCECLK(CLK100MHZ),
                          .PLLOUTCORE(clk),
                          //.PLLOUTGLOBAL(clk),
                          // .LOCK(D5),
@@ -91,17 +87,20 @@ wire resetq = RTS;
                         );
 */
 
-  wire io_rd, io_wr;
-  wire [15:0] mem_addr;
-  wire mem_wr;
-  wire [15:0] dout;
-  wire [15:0] io_din;
-  wire [12:0] code_addr;
+
+  // ######   CPU   #########################################
+  wire io_rd;    // io write
+  wire io_wr;    // io read
+  wire mem_wr;            // Mem write
+  wire [15:0] mem_addr;   // mem address
+  wire [15:0] dout;       // data bus
+  wire [15:0] io_din;     // io data input
+  wire [12:0] code_addr;  // IP
   reg unlocked = 0;
 
-`include "../build/ram.v"
+`include "../build/ram.v"  // program and data RAM
 
-  j1 _j1(
+  j1 _j1( 
     .clk(clk),
     .resetq(resetq),
     .io_rd(io_rd),
@@ -140,31 +139,46 @@ wire resetq = RTS;
   wire [15:0] io_addr_ = mem_addr;
 `endif
 
-  // ######   SRAM   ##########################################
-  assign SA17 = 1'b0;
-  assign SA16 = 1'b0;
-  assign SA15 = 1'b0;
-  assign SA14 = 1'b0;
-  assign SA13 = 1'b0;
+  // ######   SRAM ADR=IOBIT4, DATA=IOBIT5, CONTROL=IOBIT6  ##########################################
+  wire wa = io_wr_ & io_addr_[4];
+  wire wd = io_wr_ & io_addr_[5];
+  wire wc = io_wr_ & io_addr_[6];
 
-  wire [15:0] sram_address;
+  wire [17:0] sram_address;
+  wire [15:0] sram_data;
+  wire [3:0] sram_control; // { A17, A16, nOE, nWE } 
+  reg sram_d_dir; // 1=OUT (write), 0=IN (read)
+  assign SRAM_nCS = 1'b1;
+
+  //outpin pnCS (.clk(clk), .we(wc), .pin(SRAM_nCS), .wd(dout_[1]), .rd(sram_control[0]) );
+  outpin pnWE (.clk(clk), .we(wc), .pin(SRAM_nWE), .wd(dout_[1]), .rd(sram_control[0]) );
+  outpin pnOE (.clk(clk), .we(wc), .pin(SRAM_nOE), .wd(dout_[2]), .rd(sram_control[1]) );
+  outpin pnA16 (.clk(clk), .we(wc), .pin(SA16), .wd(dout_[3]), .rd(sram_control[2]) );
+  outpin pnA17 (.clk(clk), .we(wc), .pin(SA17), .wd(dout_[4]), .rd(sram_control[3]) );
 
   outport16 _sram_a ( .clk(clk),
-               .pins( {SA12, SA11, SA10, SA9, SA8, SA7, SA6, SA5, SA4, SA3, SA2, SA1, SA0, SRAM_nOE, SRAM_nWE, SRAM_nCS} ),
-               .we(io_wr_ & io_addr_[6]),
+               .pins( {SA15, SA14, SA13, SA12, SA11, SA10, SA9, SA8, SA7, SA6, SA5, SA4, SA3, SA2, SA1, SA0} ),
+               .we(wa),
                .wd(dout_[15:0]),
                .rd(sram_address)
               );
 
-  reg [7:0] sram_d_dir;   // 1:output, 0:input
-  wire [7:0] sram_d_in;
-
-  ioport _sram_d (.clk(clk),
+  ioport _sram_d_l (
+               .clk(clk),
                .pins({SD7, SD6, SD5, SD4, SD3, SD2, SD1, SD0}),
-               .we(io_wr_ & io_addr_[4]),
+               .we(wd),
                .wd(dout_[7:0]),
-               .rd(sram_d_in),
-               .dir(sram_d_dir));
+               .rd(sram_data[7:0]),
+               .dir( { sram_d_dir, sram_d_dir, sram_d_dir, sram_d_dir, sram_d_dir, sram_d_dir, sram_d_dir, sram_d_dir } )
+          );
+  ioport _sram_d_h (
+               .clk(clk),
+               .pins({SD15, SD14, SD13, SD12, SD11, SD10, SD9, SD8}),
+               .we(wd),
+               .wd(dout_[15:8]),
+               .rd(sram_data[15:8]),
+               .dir( { sram_d_dir, sram_d_dir, sram_d_dir, sram_d_dir, sram_d_dir, sram_d_dir, sram_d_dir, sram_d_dir } )
+          );
 
 
   // ######   UART   ##########################################
@@ -186,13 +200,9 @@ wire resetq = RTS;
      .wr(uart0_wr),
      .valid(uart0_valid),
      .busy(uart0_busy),
-     .tx_data(dout_[7:0]),
-     .rx_data(uart0_data));
-
- // assign DIO3_16 = uart0_valid;
- // assign DIO2_0 = uart0_valid;
- // assign DIO2_1 = uart_RXD;
- 
+     .tx_data( dout_[7:0] ),
+     .rx_data(uart0_data)
+  );
 
   // ######   LEDS   ###############################
 
@@ -203,7 +213,7 @@ wire resetq = RTS;
   outpin led1 (.clk(clk), .we(w4), .pin(LED2), .wd(dout_[1]), .rd(LEDS[1]));
 
 
- // ######   PIOS   ###############################
+ // ######   PIOS (SPI)   ###############################
   wire [2:0] PIOS;
   wire w8 = io_wr_ & io_addr_[3];
 
@@ -232,7 +242,7 @@ wire resetq = RTS;
 */
 
 
-  // ######   BUTTONS   ######################################
+  // ######   BUTTONS   ##########################################
   wire but_1, but_2;
 
   inpin _but1(.clk(clk), .pin(BUT1), .rd(but_1));
@@ -262,26 +272,26 @@ wire resetq = RTS;
       0002  1     r/w     DIO3 (dir)
       0004  2     r/w     LEDS
       0008  3     r/w     misc.out (PIO)
-      0010  4     r/w     SRAM DATA (i/o) 
-      0020  5     r/w     SRAM DATA (dir)
-      0040  6     r/w     SRAM ADRESS  
-      0080  7     r/w      
+      0010  4     r/w     SRAM ADRESS 
+      0020  5     r/w     SRAM DATA 
+      0040  6     r/w     SRAM CONTROL { 11'b0, A17, A16, SRAM_nOE, SRAM_nWE, IO_DIR }
+      0080  7     r/w     n.a.
       0800  11      w     sb_warmboot
       1000  12    r/w     UART RX, UART TX
-      2000  13    r       misc.in
+      2000  13    r       misc.in (buttons, SPI, uart status)
   */
 
   assign io_din =
-    (io_addr_[ 0] ? { dio3_in }                                       : 16'd0) |
-    (io_addr_[ 1] ? { dio3_dir }                                      : 16'd0) |
-    (io_addr_[ 2] ? {11'd0, LEDS}                                         : 16'd0) |
-    (io_addr_[ 3] ? {13'd0, PIOS}                                         : 16'd0) |
-    (io_addr_[ 4] ? {8'd0, sram_d_in}                                     : 16'd0) |
-    (io_addr_[ 5] ? {8'd0, sram_d_dir}                                    : 16'd0) |
-    (io_addr_[ 6] ? {sram_address}                                        : 16'd0) |
-    //(io_addr_[ 7] ? {8'd0, sram_d_dir}                                    : 16'd0) |
-    (io_addr_[12] ? {8'd0, uart0_data}                                    : 16'd0) |
-    (io_addr_[13] ? {12'd0, but_2, but_1, uart0_valid, !uart0_busy} : 16'd0);
+    (io_addr_[  0 ] ? { dio3_in }                                            : 16'd0) |
+    (io_addr_[  1 ] ? { dio3_dir }                                           : 16'd0) |
+    (io_addr_[  2 ] ? { 11'd0, LEDS}                                         : 16'd0) |
+    (io_addr_[  3 ] ? { 13'd0, PIOS}                                         : 16'd0) |
+    (io_addr_[  4 ] ? { sram_address}                                        : 16'd0) |
+    (io_addr_[  5 ] ? { sram_data }                                          : 16'd0) |
+    (io_addr_[  6 ] ? { 11'd0, sram_control, sram_d_dir }                    : 16'd0) |
+    //(io_addr_[ 7 ] ? { 16'd0 }                                           : 16'd0) |
+    (io_addr_[ 12 ] ? { 8'd0, uart0_data}                                    : 16'd0) |
+    (io_addr_[ 13 ] ? { 11'd0, but_2, but_1, PIOS_01, uart0_valid, !uart0_busy}       : 16'd0);
 
   reg boot, s0, s1;
 
@@ -291,22 +301,25 @@ wire resetq = RTS;
     .S1(s1)
     );
 
-  always @(posedge clk) begin
+  // io register writes
+  always @(posedge clk) 
+  begin
     if (io_wr_ & io_addr_[1])
       dio3_dir <= dout_;
-    if (io_wr_ & io_addr_[5])
-      sram_d_dir <= dout_[7:0];
-   // if (io_wr_ & io_addr_[7])
-   //   sram_d_dir <= dout_[7:0];
+    if (io_wr_ & io_addr_[6])
+      sram_d_dir <= dout_[0];
     if (io_wr_ & io_addr_[11])
       {boot, s1, s0} <= dout_[2:0];
 
   end
 
-  always @(negedge resetq or posedge clk)
-    if (!resetq)
+
+  // always @(negedge resetq or posedge clk)
+  always @(posedge clk)
+  if (!resetq)
       unlocked <= 0;
     else
       unlocked <= unlocked | io_wr_;
+ 
 
 endmodule // top

@@ -66,7 +66,7 @@ intended as an interactive Forth system using very little logic and RAM.
 The system currently fits on a Lattice iCE40HX-1k FPGA. \index{FPGA}
 The J1a and peripherals use 1200 logic elements.
 SwapForth uses 4.7 Kbytes of RAM,
-leaving about 3.3 Kbytes for the application. \index{RAM}. This version is adapted to run on an \href{https://www.olimex.com/Products/FPGA/iCE40/iCE40HX1K-EVB/open-source-hardware}{Olimex ICE40 board} and is compiled using the all open source \href{http://www.clifford.at/icestorm/}{icestorm} toolchain. Access to the on-board LEDs (2x), BUTTONs (2x), SRAM (512kbyte), SPI FLASH (2MByte) and GPIO (16-bit) is implemented.    
+leaving about 3.3 Kbytes for the application. \index{RAM}. This version is adapted to run on an \href{https://www.olimex.com/Products/FPGA/iCE40/iCE40HX1K-EVB/open-source-hardware}{Olimex ICE40 board} and is compiled using the all open source \href{http://www.clifford.at/icestorm/}{icestorm} toolchain. Access to the on-board LEDs (2x), BUTTONs (2x), SRAM (512kbyte), SPI FLASH (2MByte) and GPIO (16-bit) is implemented. The clock frequency is 50MHz.   
 
 \newpage
 After installing the \href{http://www.clifford.at/icestorm/}{icestorm}, \href{https://gist.github.com/derhuerst/1b15ff4652a867391f03}{git}, and the \href{https://www.olimex.com/wiki/ICE40HX1K-EVB#Get_started_under_Linux}{Olimex Arduino or RPi programmer tools} you can install and run it on an
@@ -290,8 +290,36 @@ Some are traditional Forth words, others are specific to the J1a SwapForth imple
 \longworddef{gpio@}{( -- a )}{Read GPIO value D0..D15}
 \longworddef{gpio\_dir}{( a -- )} {Set GPIO direction. 16bit direction (1=OUTPUT, 0=INPUT) }
 
-\longworddef{sramw}{( d a -- )}{Write data 'd' to SRAM address 'a'}
-\longworddef{sramr}{( a -- d )}{Read data from SRAM address 'a' }
+\newpage
+\subsection{SPI specific words}
+Include \mach{spi.fs} to make these words available
+
+\longworddef{spix}{( din -- dout )}{8 bit SPI exchange}
+\longworddef{>spi}{( din -- )}{Write to SPI}
+\longworddef{spix>}{( -- dout )}{Read from SPI}
+\longworddef{<spix>}{(  --  )}{Dummy SPI R/W}
+\longworddef{spi\~}{(  --  )}{Release nCS (IDLE)}
+
+\newpage
+\subsection{Flash specific words.}
+Include \mach{flash.fs} to make these words available
+
+These words are implemented to read and write the serial (Micron N25Q032A, Winbond w25qxxx or similar) SPI flash chip.
+
+\longworddef{fl\_up}{(  -- ID )}{Wake-up FLASH from powerdown }
+\longworddef{fl\_mid}{( -- MFG_ID DEV_ID)}{ read id }
+\longworddef{fl\_uid}{( -- ID0 .. ID8)}{  Read 64bit unique ID  }
+\longworddef{fl\_jid}{ ( -- capacity memtype manufacturer )}{read Jedec ID}
+\longworddef{fl\_st1}{( -- status )}{read status register 1}
+\longworddef{fl\_st2}{( -- status )}{read status register 2}
+\longworddef{fl\_read}{(n addess[16:0] address[23:16] -- data\-n data\-0)}{Read n bytes of data from 24bit start address}
+\longworddef{fl\_write}{( d1 d2 .. dn n addess[16:0] address[23:16] -- )}{Write n bytes of data to 24bit start address}
+
+\longworddef{fl\_we}{( -- )}{set write enable }
+\longworddef{fl\_wd}{( -- )}{set write disable }
+\longworddef{fl\_ce}{( -- )}{Chip erase }
+\longworddef{fl\_se}{( addess[16:0] address[23:16] -- ) }{Sector erase}
+\longworddef{fl\_wait}{( -- ) }{Wait for erase/write done}
 
 % \longworddef{serialize}{( -- )}{display all of current memory in base 36}
 
@@ -407,7 +435,7 @@ As an example of direct port access, this reads the buttons and sets the LEDS wh
 : .bleds
 begin
   $2000 io@
-  2 rshift 3 xor
+  3 rshift 3 xor
   dup .x
   $0004 io!
 again
@@ -575,7 +603,7 @@ The write port at address \$0040 is controlling the SRAM data direction and R/W 
 
 % { 11'b0, A17, A16, SRAM_nOE, SRAM_nWE, IO_DIR }
 \vspace{10pt}
-\$0020 SRAM Control register:
+\$0040 SRAM Control register:
 
 \vspace{10pt}
 \noindent
@@ -632,7 +660,7 @@ can be used to access this port.
     \bitbox{8}{byte}
 \end{bytefield}
 
-\subsection{\$2000: Buttons, SPI Flash and UART inputs}
+\subsection{\$2000: Buttons, SPI MISO and UART inputs}
 
 Read-only port \$2000 contains the input signals from the
 Buttons, SPI flash, and UART.
@@ -644,7 +672,7 @@ Buttons, SPI flash, and UART.
     \bitbox{11}{} &
     \bitbox{1}{\tiny{Button\\BUT2}} &
     \bitbox{1}{\tiny{Button\\BUT1}} &
-    \bitbox{1}{\tiny{flash\\MISO}} &
+    \bitbox{1}{\tiny{Flash\\MISO}} &
     \bitbox{1}{\tiny{UART\\key?}} &
     \bitbox{1}{\tiny{UART\\busy}}
 \end{bytefield}
