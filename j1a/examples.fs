@@ -45,8 +45,8 @@ again
 \ WRITE: Set nWE LOW, data dir to output, set data, set address, set nWE HIGH (on /WE low --> /WE high), data is clocked in
 \ READ: Set data dir to input, set address, CS=LOW, read data 
 
-\  write: data adress --
-: sramw
+\  write: 
+: sramw (data adress --)
 $10 io!
 $20 io!
 $4 $0040 io!

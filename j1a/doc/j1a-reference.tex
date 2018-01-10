@@ -277,14 +277,14 @@ Some are traditional Forth words, others are specific to the J1a SwapForth imple
 \longworddef{-rot}{( x1 x2 x3 -- x3 x1 x2 )}{rotate the top three stack entries}
 \longworddef{bounds}{( start cnt -- start+cnt start )}{prepare to loop on a range}
 \longworddef{forth}{( -- a )}{variable: most recent dictionary entry}
-\longworddef{io!}{( x a -- )}{store \mach{x} to IO port \mach{a}}
-\longworddef{io@}{( a -- x )}{fetch from IO port \mach{a}}
-\longworddef{leds}{( x -- )}{write \mach{x} to the onboard LEDs (bit0=D1, bit1=D2}
 \longworddef{new}{( -- )}{restore code and data pointers to the power-up state}
 \longworddef{s,}{( a u -- )}{add the \mach{u}-character string \mach{a} to the data space}
 \longworddef{tth}{( -- a )}{variable: tethered mode}
 
 \newpage
+\longworddef{io!}{( x a -- )}{store \mach{x} to IO port \mach{a}}
+\longworddef{io@}{( a -- x )}{fetch from IO port \mach{a}}
+\longworddef{leds}{( x -- )}{write \mach{x} to the onboard LEDs (bit0=D1, bit1=D2)}
 \longworddef{buttons}{( -- a )}{Read current button state (bit0=BUTTON1, bit1=BUTTON2)}
 \longworddef{gpio!}{( a -- )}{Write GPIO value D0..D15 (set gpio\_dir bits first if you want signal output) }
 \longworddef{gpio@}{( -- a )}{Read GPIO value D0..D15}
@@ -307,7 +307,7 @@ Include \mach{flash.fs} to make these words available
 These words are implemented to read and write the serial (Micron N25Q032A, Winbond w25qxxx or similar) SPI flash chip.
 
 \longworddef{fl\_up}{(  -- ID )}{Wake-up FLASH from powerdown }
-\longworddef{fl\_mid}{( -- MFG_ID DEV_ID)}{ read id }
+\longworddef{fl\_mid}{( -- MFG\_ID DEV\_ID)}{ read id }
 \longworddef{fl\_uid}{( -- ID0 .. ID8)}{  Read 64bit unique ID  }
 \longworddef{fl\_jid}{ ( -- capacity memtype manufacturer )}{read Jedec ID}
 \longworddef{fl\_st1}{( -- status )}{read status register 1}
