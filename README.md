@@ -23,3 +23,10 @@ Simulated hosts include:
  * Both Python 2.x and 3.x are supported
  * The shell now runs on Windows, with and without [pyreadline](https://pypi.python.org/pypi/pyreadline)
  * The iCEstick port is now running at 48 MHz
+
+## 2018-01-01
+ * Olimex ICE-40 version
+ * UART problem fixed (sampled at incorrect RX phase)
+ * LED/BUTTON/GPIO/SPI/FLASH is working
+ * SRAM requires some work
+ * See: [Documentation](https://github.com/pbrier/swapforth/blob/master/j1a/doc/j1a-reference.pdf)
